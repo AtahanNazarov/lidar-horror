@@ -13,8 +13,11 @@ public class StaminaUI : MonoBehaviour
     public Color exhaustedColor = Color.magenta;
     public float colorLerpSpeed = 5f;
 
+    [Header("Smoothing")]
+    public float barChangeSpeed = 10f; // Higher = Snappier, Lower = Smoother
+
     [Header("Fading")]
-    public float fadeSpeed = 4f; // How fast it disappears/reappears
+    public float fadeSpeed = 4f; 
 
     [Header("Shake Settings")]
     public float shakeAmount = 4f;
@@ -22,7 +25,7 @@ public class StaminaUI : MonoBehaviour
 
     // Internal variables
     private RectTransform rectTransform;
-    private CanvasGroup canvasGroup; // Controls visibility
+    private CanvasGroup canvasGroup;
     private Vector2 originalPos;
     private float currentShakeTimer = 0f;
 
@@ -33,7 +36,7 @@ public class StaminaUI : MonoBehaviour
             fillImage = staminaSlider.fillRect.GetComponent<Image>();
 
         rectTransform = GetComponent<RectTransform>();
-        canvasGroup = GetComponent<CanvasGroup>(); // Auto-find the group
+        canvasGroup = GetComponent<CanvasGroup>(); 
         
         if (rectTransform != null)
             originalPos = rectTransform.anchoredPosition;
@@ -43,11 +46,17 @@ public class StaminaUI : MonoBehaviour
     {
         if (playerMovement == null || staminaSlider == null) return;
 
-        // --- PART 1: SLIDER VALUE ---
-        float v = playerMovement.Stamina01;
-        if (v < 0.01f) v = 0f;
-        else if (v > 0.99f) v = 1f;
-        staminaSlider.value = v;
+        // --- PART 1: SLIDER VALUE (UPDATED) ---
+        // 1. Get the "Real" value from the player script
+        float targetValue = playerMovement.Stamina01;
+
+        // 2. Snap target to 0 or 1 to prevent floating point errors
+        if (targetValue < 0.01f) targetValue = 0f;
+        else if (targetValue > 0.99f) targetValue = 1f;
+
+        // 3. SMOOTHLY move the slider towards the target value
+        // Mathf.Lerp creates a nice "ease-out" effect (fast start, slow end)
+        staminaSlider.value = Mathf.Lerp(staminaSlider.value, targetValue, Time.deltaTime * barChangeSpeed);
 
         // --- PART 2: COLOR ---
         if (fillImage != null)
@@ -57,11 +66,9 @@ public class StaminaUI : MonoBehaviour
         }
 
         // --- PART 3: AUTO-FADE ---
-        // If Stamina is full (1) AND we are not locked (recharging from 0) -> Invisible (0)
-        // Otherwise -> Visible (1)
-        float targetAlpha = (v >= 1f && !playerMovement.IsStaminaLocked) ? 0f : 1f;
+        // Note: We check 'targetValue' for fading so it doesn't wait for the slow animation to finish before fading out
+        float targetAlpha = (targetValue >= 1f && !playerMovement.IsStaminaLocked) ? 0f : 1f;
         
-        // Move alpha smoothly
         if (canvasGroup != null)
         {
             canvasGroup.alpha = Mathf.MoveTowards(canvasGroup.alpha, targetAlpha, Time.deltaTime * fadeSpeed);
