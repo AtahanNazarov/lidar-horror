@@ -1,14 +1,9 @@
 fileFormatVersion: 2
-guid: be4396c6f0259e445b9d3315d557e76d
+guid: 56f78a2f63918384fa8f43118cb427bc
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects:
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Scanner
-    second: {fileID: 2100000, guid: 8852b9a86c31cad40a361d8e46ecfce5, type: 2}
+  externalObjects: {}
   materials:
     materialImportMode: 2
     materialName: 0
