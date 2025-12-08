@@ -25,8 +25,13 @@ public class PlayerController : MonoBehaviour
         if (playerCamera == null) playerCamera = Camera.main;
         if (interactionPanel != null) interactionPanel.SetActive(false);
 
-        // Get the new ItemHolder component
-        _itemHolder = GetComponent<ItemHolder>();
+        // Get the new ItemHolder component (on this object or any child)
+        _itemHolder = GetComponentInChildren<ItemHolder>();
+        if (_itemHolder == null)
+        {
+            Debug.LogError("PlayerController: No ItemHolder found in children. " +
+                           "Add ItemHolder to Player/PlayerCamera/ViewModelRoot and assign HandHolder.");
+        }
     }
 
     void Update()
@@ -81,6 +86,7 @@ public class PlayerController : MonoBehaviour
     void PickUpItem(InteractableItem item)
     {
         if (_itemHolder == null) return;
+
         currentHeldItem = item; 
         item.PickUp(_itemHolder); 
     }

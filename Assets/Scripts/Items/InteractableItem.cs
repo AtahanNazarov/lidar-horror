@@ -6,12 +6,12 @@ public class InteractableItem : MonoBehaviour
     [Header("Item Identification")]
     public string ItemName = "Lidar Scanner";
     
-    [Header("Hold Position (Local to Camera)")]
+    [Header("Hold Position (local to HandHolder)")]
     // These values define the unique hold pose for THIS item
     public Vector3 LocalPosition = new Vector3(0.5f, -0.35f, 0.7f);
     public Vector3 LocalRotation = new Vector3(-90f, 180f, 10f);
 
-    // --- Interaction Methods (used by PlayerInteraction) ---
+    // --- Interaction Methods (used by PlayerInteraction / PlayerController) ---
 
     public string GetInteractionText()
     {
@@ -25,10 +25,10 @@ public class InteractableItem : MonoBehaviour
         
         // Disable physics/collider
         Collider col = GetComponent<Collider>();
-        if(col != null) col.enabled = false;
+        if (col != null) col.enabled = false;
         
         Rigidbody rb = GetComponent<Rigidbody>();
-        if(rb != null) rb.isKinematic = true;
+        if (rb != null) rb.isKinematic = true;
     }
 
     public void Drop(ItemHolder holder, Vector3 playerForward)
@@ -38,10 +38,10 @@ public class InteractableItem : MonoBehaviour
         
         // Re-enable physics/collider
         Collider col = GetComponent<Collider>();
-        if(col != null) col.enabled = true;
+        if (col != null) col.enabled = true;
         
         Rigidbody rb = GetComponent<Rigidbody>();
-        if(rb != null) 
+        if (rb != null) 
         {
             rb.isKinematic = false;
             // Throw the item slightly forward
