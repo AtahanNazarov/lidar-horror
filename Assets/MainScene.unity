@@ -352,8 +352,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InteractableItem
   ItemName: Flashlight
-  LocalPosition: {x: 0.5, y: -0.35, z: 0.7}
-  LocalRotation: {x: -90, y: 180, z: 10}
+  LocalPosition: {x: 0.6, y: -0.45, z: 0.1}
+  LocalRotation: {x: -190, y: 10, z: -90}
+  livePoseTuning: 0
 --- !u!65 &239413809
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -455,12 +456,11 @@ MonoBehaviour:
   swayAmount: 0.02
   swayMaxAmount: 0.06
   swaySmooth: 8
+  motionClock: {fileID: 366144149}
   playerController: {fileID: 366144144}
   bobAmount: 0.03
-  bobFrequency: 9
   moveThreshold: 0.1
   idleAmount: 0.01
-  idleFrequency: 1.2
 --- !u!1 &366144142
 GameObject:
   m_ObjectHideFlags: 0
@@ -474,6 +474,7 @@ GameObject:
   - component: {fileID: 366144143}
   - component: {fileID: 366144147}
   - component: {fileID: 366144148}
+  - component: {fileID: 366144149}
   m_Layer: 0
   m_Name: '[Player]'
   m_TagString: Player
@@ -588,6 +589,25 @@ MonoBehaviour:
   interactionText: {fileID: 872187745}
   playerCamera: {fileID: 1995068302}
   currentHeldItem: {fileID: 0}
+  pickupKey: 101
+  dropKey: 103
+--- !u!114 &366144149
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 366144142}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f19120c960481c24dbb931e34e1c8698, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerMotionClock
+  controller: {fileID: 366144144}
+  idleFrequency: 1.2
+  walkFrequency: 6
+  runFrequency: 9
+  moveThreshold: 0.01
 --- !u!1 &371777190
 GameObject:
   m_ObjectHideFlags: 0
@@ -2130,7 +2150,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1995068297}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.11729039, y: -0.87909317, z: 0.28141353, w: -0.3663941}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1.92, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2269,18 +2289,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCameraMotion
   controller: {fileID: 366144144}
   playerMovement: {fileID: 366144143}
+  motionClock: {fileID: 366144149}
   idleAmplitude: 0.01
   walkAmplitude: 0.03
   runAmplitude: 0.06
-  idleFrequency: 1.2
-  walkFrequency: 6
-  runFrequency: 9
   swayHorizontalAmount: 0.02
   swayVerticalAmount: 0.01
   swayMaxOffset: 0.04
   bobSmooth: 10
   swaySmooth: 10
   moveThreshold: 0.05
+  jumpKickAmount: 0.04
+  jumpKickDuration: 0.15
+  landKickAmount: 0.06
+  landKickDuration: 0.12
 --- !u!1 &2004702842 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 56f78a2f63918384fa8f43118cb427bc, type: 3}
@@ -2352,8 +2374,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InteractableItem
   ItemName: Lidar Scanner
-  LocalPosition: {x: 0.5, y: -0.35, z: 0.7}
-  LocalRotation: {x: -90, y: 180, z: 10}
+  LocalPosition: {x: 0.6, y: -0.35, z: 0.2}
+  LocalRotation: {x: -90, y: 180, z: 20}
+  livePoseTuning: 0
 --- !u!1 &2029351899
 GameObject:
   m_ObjectHideFlags: 0

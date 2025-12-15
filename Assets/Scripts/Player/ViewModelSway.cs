@@ -2,24 +2,24 @@ using UnityEngine;
 
 public class ViewmodelSway : MonoBehaviour
 {
-    [Header("Mouse sway")]
+    [Header("Mouse sway (viewmodel only)")]
     public float swayAmount = 0.04f;
     public float swayMaxAmount = 0.08f;
     public float swaySmooth = 8f;
 
-    [Header("Walk bob (item only)")]
+    [Header("Shared motion clock")]
+    public PlayerMotionClock motionClock; // drag [Player] here
+
+    [Header("Walk bob (synced)")]
     public CharacterController playerController;  // drag [Player] here
     public float bobAmount = 0.04f;
-    public float bobFrequency = 9f;
     public float moveThreshold = 0.05f;
 
-    [Header("Idle breathing")]
+    [Header("Idle breathing (synced)")]
     public float idleAmount = 0.01f;
-    public float idleFrequency = 1.2f;
 
     private Vector3 initialLocalPos;
-    private float bobTimer;
-    private float idleTimer;
+    private Vector3 currentOffset;
 
     void Start()
     {
@@ -41,37 +41,27 @@ public class ViewmodelSway : MonoBehaviour
         swayOffset.x = Mathf.Clamp(swayOffset.x, -swayMaxAmount, swayMaxAmount);
         swayOffset.y = Mathf.Clamp(swayOffset.y, -swayMaxAmount, swayMaxAmount);
 
-        // ---------- 2. Walk bob ----------
-        Vector3 bobOffset = Vector3.zero;
+        // ---------- 2. Synced bob + idle (shared phase) ----------
+        float phase = (motionClock != null) ? motionClock.Phase : 0f;
 
-        if (playerController != null &&
+        bool moving =
+            playerController != null &&
             playerController.isGrounded &&
-            playerController.velocity.magnitude > moveThreshold)
+            playerController.velocity.magnitude > moveThreshold;
+
+        Vector3 bobOffset = Vector3.zero;
+        if (moving)
         {
-            bobTimer += Time.deltaTime * bobFrequency;
-            bobOffset.y = Mathf.Sin(bobTimer) * bobAmount;
-            bobOffset.x = Mathf.Cos(bobTimer * 0.5f) * bobAmount * 0.5f;
-        }
-        else
-        {
-            bobTimer = 0f;
+            bobOffset.y = Mathf.Sin(phase * 2f) * bobAmount;
+            bobOffset.x = Mathf.Cos(phase) * bobAmount * 0.5f;
         }
 
-        // ---------- 3. Idle breathing (always on) ----------
-        idleTimer += Time.deltaTime * idleFrequency;
-        Vector3 idleOffset = new Vector3(
-            0f,
-            Mathf.Sin(idleTimer) * idleAmount,
-            0f
-        );
+        Vector3 idleOffset = new Vector3(0f, Mathf.Sin(phase) * idleAmount, 0f);
 
-        // ---------- 4. Apply ----------
-        Vector3 targetPos = initialLocalPos + swayOffset + bobOffset + idleOffset;
+        Vector3 targetOffset = swayOffset + bobOffset + idleOffset;
 
-        transform.localPosition = Vector3.Lerp(
-            transform.localPosition,
-            targetPos,
-            Time.deltaTime * swaySmooth
-        );
+        // ---------- 3. Apply ----------
+        currentOffset = Vector3.Lerp(currentOffset, targetOffset, Time.deltaTime * swaySmooth);
+        transform.localPosition = initialLocalPos + currentOffset;
     }
 }

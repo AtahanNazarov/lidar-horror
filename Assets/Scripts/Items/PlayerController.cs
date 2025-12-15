@@ -1,36 +1,43 @@
 using UnityEngine;
 using TMPro;
 
-// Renamed from PlayerInteraction.cs, now uses ItemHolder.
 public class PlayerController : MonoBehaviour
 {
     [Header("Settings")]
     public float interactionDistance = 3f;
     public float interactionSphereRadius = 0.5f;
     public LayerMask interactionLayer;
-    
+
     [Header("UI References")]
     public GameObject interactionPanel;
     public TextMeshProUGUI interactionText;
 
     [Header("References")]
     public Camera playerCamera;
-    private ItemHolder _itemHolder; // Reference to the new holder script
+    private ItemHolder _itemHolder;
 
     [Header("Current State")]
-    public InteractableItem currentHeldItem; // Reference to the new item script
+    public InteractableItem currentHeldItem;
+
+    public KeyCode pickupKey = KeyCode.E;
+    public KeyCode dropKey = KeyCode.G;
 
     void Start()
     {
-        if (playerCamera == null) playerCamera = Camera.main;
-        if (interactionPanel != null) interactionPanel.SetActive(false);
+        if (playerCamera == null)
+            playerCamera = Camera.main;
 
-        // Get the new ItemHolder component (on this object or any child)
+        if (interactionPanel != null)
+            interactionPanel.SetActive(false);
+
         _itemHolder = GetComponentInChildren<ItemHolder>();
+
         if (_itemHolder == null)
         {
-            Debug.LogError("PlayerController: No ItemHolder found in children. " +
-                           "Add ItemHolder to Player/PlayerCamera/ViewModelRoot and assign HandHolder.");
+            Debug.LogError(
+                "PlayerController: No ItemHolder found. " +
+                "Add ItemHolder to Player/Camera/ViewModelRoot and assign HandHolder."
+            );
         }
     }
 
@@ -41,41 +48,42 @@ public class PlayerController : MonoBehaviour
 
     void HandleInteraction()
     {
-        // 1. Handle Dropping Held Item
+        // --- HELD ITEM ---
         if (currentHeldItem != null)
         {
             if (interactionPanel != null)
                 interactionPanel.SetActive(false);
 
-            if (Input.GetKeyDown(KeyCode.G))
+            if (Input.GetKeyDown(dropKey))
             {
                 DropItem();
             }
-            return; 
+            return;
         }
 
-        // 2. SphereCast for pickup detection
-        if (interactionPanel != null) interactionPanel.SetActive(false);
-        if (playerCamera == null) return;
+        // --- PICKUP ---
+        if (interactionPanel != null)
+            interactionPanel.SetActive(false);
+
+        if (playerCamera == null)
+            return;
 
         Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         RaycastHit hit;
 
         if (Physics.SphereCast(ray, interactionSphereRadius, out hit, interactionDistance, interactionLayer))
         {
-            // Look for the new item script: InteractableItem
             InteractableItem item = hit.collider.GetComponent<InteractableItem>();
 
             if (item != null)
             {
-                // Show UI text directly from the item
                 if (interactionText != null && interactionPanel != null)
                 {
                     interactionText.text = item.GetInteractionText();
                     interactionPanel.SetActive(true);
                 }
 
-                if (Input.GetKeyDown(KeyCode.E))
+                if (Input.GetKeyDown(pickupKey))
                 {
                     PickUpItem(item);
                 }
@@ -85,17 +93,18 @@ public class PlayerController : MonoBehaviour
 
     void PickUpItem(InteractableItem item)
     {
-        if (_itemHolder == null) return;
+        if (_itemHolder == null)
+            return;
 
-        currentHeldItem = item; 
-        item.PickUp(_itemHolder); 
+        currentHeldItem = item;
+        item.PickUp(_itemHolder);
     }
 
     void DropItem()
     {
         if (currentHeldItem != null)
         {
-            currentHeldItem.Drop(_itemHolder, transform.forward); 
+            currentHeldItem.Drop(_itemHolder, transform.forward);
             currentHeldItem = null;
         }
     }
