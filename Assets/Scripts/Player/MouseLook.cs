@@ -16,6 +16,10 @@ public class MouseLook : MonoBehaviour
 
     void Update()
     {
+        // --- FIX: STOP CAMERA IF PAUSED ---
+        // If the PauseMenu says we are paused, stop reading mouse input instantly.
+        if (PauseMenu.isPaused) return; 
+
         // Raw mouse input (no smoothing)
         float mouseX = Input.GetAxisRaw("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxisRaw("Mouse Y") * mouseSensitivity;
