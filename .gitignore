@@ -1,0 +1,62 @@
+# Unity-generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+Logs/
+UserSettings/
+
+# Visual Studio / Rider
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Ignore Unity cache
+MemoryCaptures/
+Artifacts/
+
+# Auto-generated input system stuff
+*.inputactions
+*.inputsettings
+
+# Polished ignores for TextMeshPro auto files
+Assets/TextMesh Pro/Fonts/*
+Assets/TextMesh Pro/Resources/Fonts & Materials/*.meta
+
+# Build results and cache
+*.apk
+*.aab
+*.exe
+*.app
+*.dll
+*.so
+*.dylib
+*.manifest
+*.symbols
+
+# Crash reports
+sysinfo.txt
+
+# If Unity Asset Store files appear anywhere
+*.unitypackage
+
+# Ignore Rider files
+.idea/
+*.sln.iml
+
+# Ignore VSCode settings (optional)
+.vscode/
+
+# Macs being Macs
+.DS_Store
+
+# Windows thumbnails
+Thumbs.db
