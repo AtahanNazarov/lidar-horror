@@ -1,23 +1,24 @@
 using UnityEngine;
 
-public class GunFollower : MonoBehaviour {
-    [Tooltip("Drag the Player GameObject (with CharacterController) here.")]
+public class GunFollower : MonoBehaviour
+{
+    [Header("References")]
     public Transform playerTransform;
+    public Transform cameraTransform;
 
     [Header("Gun Offset")]
-    [Tooltip("The position relative to the player where the gun is held.")]
-    public Vector3 offset = new Vector3(0.5f, 0f, 0f);
+    public Vector3 offset = new Vector3(0.5f, -0.3f, 0.8f);
 
-    void Update() {
-        if (playerTransform != null) {
-            // 1. Position the gun relative to the player's position and the offset
-            transform.position = playerTransform.position + offset;
+    void LateUpdate()
+    {
+        if (playerTransform == null || cameraTransform == null)
+            return;
 
-            // 2. Make the gun face the same direction as the player
-            // This ensures the laser always shoots in the player's forward direction.
-            transform.rotation = playerTransform.rotation;
-        } else {
-            Debug.LogWarning("Player Transform not assigned in GunFollower script.");
-        }
+        transform.position = cameraTransform.position
+                           + cameraTransform.right * offset.x
+                           + cameraTransform.up * offset.y
+                           + cameraTransform.forward * offset.z;
+
+        transform.rotation = cameraTransform.rotation;
     }
 }

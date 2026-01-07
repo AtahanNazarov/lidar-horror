@@ -7,14 +7,13 @@ public class FPSCameraLook : MonoBehaviour
     public Transform playerBody;
 
     private PlayerControls controls;
-    private Vector2 lookInput;
     private float xRotation = 0f;
 
     void Awake()
     {
         controls = new PlayerControls();
-        controls.Player.Look.performed += ctx => lookInput = ctx.ReadValue<Vector2>();
-        controls.Player.Look.canceled += ctx => lookInput = Vector2.zero;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     void OnEnable() => controls.Enable();
@@ -22,15 +21,17 @@ public class FPSCameraLook : MonoBehaviour
 
     void Update()
     {
+        Vector2 lookInput = controls.Player.Look.ReadValue<Vector2>();
+
         float mouseX = lookInput.x * sensitivity * Time.deltaTime;
         float mouseY = lookInput.y * sensitivity * Time.deltaTime;
 
-        // Vertical (camera only)
+        // Vertical
         xRotation -= mouseY;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
-        transform.localRotation = Quaternion.Euler(xRotation, 0, 0);
+        transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
 
-        // Horizontal (player rotates)
+        // Horizontal
         playerBody.Rotate(Vector3.up * mouseX);
     }
 }

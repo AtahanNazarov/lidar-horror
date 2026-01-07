@@ -1,239 +1,235 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class LaserSystem : MonoBehaviour
 {
-    [Header("Dots (Static Hit Points)")]
-    public Material dotMaterial; 
-    public int dotCount = 50;
+    [Header("Dots (Persistent Scan)")]
+    public Material dotMaterial;
+    public int dotsPerPulse = 50;
     public float dotSpreadAngle = 20f;
     public float maxDistance = 50f;
     public float dotScale = 0.1f;
 
-    [Header("Rays (Animated Pulses)")]
+    [Header("Dot Optimization")]
+    public int maxPersistentDots = 2000;
+    public float minDotDistance = 0.15f;
+
+    [Header("Rays (Visual Only)")]
     public Material rayMaterial;
     public float rayWidth = 0.04f;
     public int rayCount = 12;
     public float raySpreadAngle = 12f;
-    public float rotationPerPulse = 10f; // Degrees to rotate per pulse
+    public float rotationPerPulse = 10f;
 
     [Header("Ray Animation")]
     public AnimationCurve fadeCurve;
     public float fadeDuration = 0.25f;
     public float rayPulseInterval = 0.08f;
-    public float wallCheckDistance = 30f; 
+    public float wallCheckDistance = 30f;
 
-    [Header("Camera / Origin")]
-    public Transform cameraTransform;
-    
-    [Tooltip("If assigned, rays will fire from this transform instead of the camera")]
-    public Transform gunTransform;
+    // -------------------------
 
-    // Dot drawing state
-    private List<Vector3> dotPositions; 
-    private Mesh sphereMesh; 
-    private Material dotDrawMaterialInstance; 
+    private PlayerControls controls;
+    private bool scanning;
 
-    // Deterministic ray buffers
-    private Vector3[] rayDirections;
+    private Queue<Vector3> dotPositions;
+    private Mesh sphereMesh;
+    private Material dotMatInstance;
 
-    // Ray fading state
-    private float[] rayFadeTimes;
-    private LineRenderer[] rayLines;
+    private Vector3[] rayDirs;
+    private float[] rayTimes;
+    private LineRenderer[] rays;
 
     private float nextPulseTime;
-    private Vector3 lastCamPos; 
-    private Quaternion lastCamRot; 
-    
-    private float currentPulseRotation = 0f;
+    private float pulseRotation;
+
+    void Awake()
+    {
+        controls = new PlayerControls();
+        controls.Player.Attack.performed += _ => scanning = true;
+        controls.Player.Attack.canceled += _ => scanning = false;
+    }
+
+    void OnEnable() => controls.Enable();
+    void OnDisable() => controls.Disable();
 
     void Start()
     {
-        // --- DOT SETUP ---
-        dotPositions = new List<Vector3>(dotCount);
+        dotPositions = new Queue<Vector3>(maxPersistentDots);
         sphereMesh = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
-        
-        if (dotMaterial != null)
-        {
-            dotDrawMaterialInstance = new Material(dotMaterial);
-        }
+        dotMatInstance = dotMaterial ? new Material(dotMaterial) : null;
 
         InitRays();
-        
-        lastCamPos = cameraTransform.position;
-        lastCamRot = cameraTransform.rotation;
-        
-        UpdateDotCollisions(); 
     }
 
-    void Update()
+    void LateUpdate()
     {
-        // Dots: Update ONLY when the camera/laser origin moves or rotates.
-        if (cameraTransform.position != lastCamPos || cameraTransform.rotation != lastCamRot)
+        // Always draw revealed areas
+        DrawDots();
+
+        if (!scanning)
         {
-            UpdateDotCollisions();
-            lastCamPos = cameraTransform.position;
-            lastCamRot = cameraTransform.rotation;
+            DisableAllRays();
+            return;
         }
 
-        // --- RAY ANIMATION LOGIC ---
-        
-        // Check for a nearby wall
         bool nearWall = Physics.Raycast(
-            cameraTransform.position,
-            cameraTransform.forward,
+            transform.position,
+            transform.forward,
             out _,
             wallCheckDistance
         );
 
-        // Pulse rays on timer if near a wall
         if (nearWall && Time.time >= nextPulseTime)
         {
+            AddDots();
             PulseRays();
             nextPulseTime = Time.time + rayPulseInterval;
         }
 
-        // Animate the ray fades
-        AnimateRayFades();
-
-        // Draw the sphere dots
-        DrawSphereDots();
+        AnimateRays();
     }
 
-    // ----------------------------------------------------------
-    // Dots (Static Hit Points)
-    // ----------------------------------------------------------
 
-    void UpdateDotCollisions()
+    // ==================================================
+    // DOTS
+    // ==================================================
+
+    void AddDots()
     {
-        dotPositions.Clear();
-        for (int i = 0; i < dotCount; i++)
+        for (int i = 0; i < dotsPerPulse; i++)
         {
-            Vector3 dir = RandomDirection(dotSpreadAngle);
-            if (Physics.Raycast(cameraTransform.position, dir, out RaycastHit hit, maxDistance))
+            Vector3 localDir = RandomLocalDir(dotSpreadAngle);
+            Vector3 worldDir = transform.TransformDirection(localDir);
+
+            if (Physics.Raycast(transform.position, worldDir, out RaycastHit hit, maxDistance))
             {
-                dotPositions.Add(hit.point);
+                if (IsTooClose(hit.point))
+                    continue;
+
+                dotPositions.Enqueue(hit.point);
+
+                if (dotPositions.Count > maxPersistentDots)
+                    dotPositions.Dequeue();
             }
         }
     }
 
-    void DrawSphereDots()
+    bool IsTooClose(Vector3 p)
     {
-        if (sphereMesh == null || dotDrawMaterialInstance == null) return;
-        Quaternion rotation = Quaternion.identity; 
-        foreach (Vector3 position in dotPositions)
+        foreach (var d in dotPositions)
         {
-            Matrix4x4 matrix = Matrix4x4.TRS(
-                position,
-                rotation,
-                Vector3.one * dotScale
+            if (Vector3.Distance(d, p) < minDotDistance)
+                return true;
+        }
+        return false;
+    }
+
+    void DrawDots()
+    {
+        if (!sphereMesh || !dotMatInstance)
+            return;
+
+        foreach (var p in dotPositions)
+        {
+            Graphics.DrawMesh(
+                sphereMesh,
+                Matrix4x4.TRS(p, Quaternion.identity, Vector3.one * dotScale),
+                dotMatInstance,
+                gameObject.layer
             );
-            Graphics.DrawMesh(sphereMesh, matrix, dotDrawMaterialInstance, gameObject.layer, null, 0);
         }
     }
 
-    Vector3 RandomDirection(float angle)
+    Vector3 RandomLocalDir(float angle)
     {
-        Vector3 rand = Random.insideUnitSphere.normalized;
-        return Vector3.Slerp(cameraTransform.forward, rand, angle / 90f).normalized;
+        Vector3 r = Random.insideUnitSphere.normalized;
+        return Vector3.Slerp(Vector3.forward, r, angle / 90f).normalized;
     }
 
-    // ----------------------------------------------------------
-    // Rays (Animated Pulses) - CONE BASED
-    // ----------------------------------------------------------
-    
+    // ==================================================
+    // RAYS
+    // ==================================================
+
     void InitRays()
     {
-        rayDirections = new Vector3[rayCount];
-        rayFadeTimes = new float[rayCount];
-        rayLines = new LineRenderer[rayCount];
+        rayDirs = new Vector3[rayCount];
+        rayTimes = new float[rayCount];
+        rays = new LineRenderer[rayCount];
 
         for (int i = 0; i < rayCount; i++)
         {
-            // Create rays in a circle around the forward axis
-            rayDirections[i] = ConeDirection(i, rayCount, raySpreadAngle);
+            rayDirs[i] = ConeDir(i, rayCount, raySpreadAngle);
 
-            GameObject g = new GameObject("Ray_" + i);
+            GameObject g = new GameObject($"Ray_{i}");
             g.transform.SetParent(transform);
+            g.transform.localPosition = Vector3.zero;
+            g.transform.localRotation = Quaternion.identity;
 
             LineRenderer lr = g.AddComponent<LineRenderer>();
+            lr.useWorldSpace = false;
             lr.positionCount = 2;
             lr.material = new Material(rayMaterial);
             lr.startWidth = rayWidth;
             lr.endWidth = rayWidth;
             lr.enabled = false;
 
-            rayLines[i] = lr;
-            rayFadeTimes[i] = -999f;
+            rays[i] = lr;
+            rayTimes[i] = -999f;
         }
+    }
+
+    void DisableAllRays()
+    {
+        for (int i = 0; i < rayCount; i++)
+            rays[i].enabled = false;
     }
 
     void PulseRays()
     {
-        // Use gun position if assigned, otherwise use camera position
-        Transform firingTransform = gunTransform != null ? gunTransform : cameraTransform;
-        Vector3 origin = firingTransform.position + firingTransform.forward * 0.05f;
-        
-        // Accumulate rotation around the cone axis (forward direction)
-        currentPulseRotation += rotationPerPulse;
-        
+        pulseRotation += rotationPerPulse;
+
         for (int i = 0; i < rayCount; i++)
         {
-            rayFadeTimes[i] = Time.time;
-            rayLines[i].enabled = true;
+            rayTimes[i] = Time.time;
+            rays[i].enabled = true;
 
-            // Rotate the local cone direction around the forward axis
-            Quaternion rotationOffset = Quaternion.AngleAxis(currentPulseRotation, Vector3.forward);
-            Vector3 rotatedLocalDir = rotationOffset * rayDirections[i];
-            
-            // Transform to world space using firing transform rotation
-            Vector3 worldDir = firingTransform.rotation * rotatedLocalDir;
+            Quaternion spin = Quaternion.AngleAxis(pulseRotation, Vector3.forward);
+            Vector3 localDir = spin * rayDirs[i];
 
-            Vector3 end;
-            if (Physics.Raycast(origin, worldDir, out RaycastHit hit, maxDistance))
-                end = hit.point;
-            else
-                end = origin + worldDir * maxDistance;
-
-            rayLines[i].SetPosition(0, origin);
-            rayLines[i].SetPosition(1, end);
+            rays[i].SetPosition(0, Vector3.zero);
+            rays[i].SetPosition(1, localDir * maxDistance);
         }
     }
 
-    void AnimateRayFades()
+    void AnimateRays()
     {
         for (int i = 0; i < rayCount; i++)
         {
-            float t = (Time.time - rayFadeTimes[i]) / fadeDuration;
+            float t = (Time.time - rayTimes[i]) / fadeDuration;
 
             if (t >= 1f)
             {
-                rayLines[i].enabled = false;
+                rays[i].enabled = false;
                 continue;
             }
 
-            float alpha = fadeCurve.Evaluate(Mathf.Clamp01(t));
-
-            Color c = rayLines[i].material.color;
-            c.a = alpha;
-            rayLines[i].material.color = c;
+            Color c = rays[i].material.color;
+            c.a = fadeCurve.Evaluate(Mathf.Clamp01(t));
+            rays[i].material.color = c;
         }
     }
 
-    Vector3 ConeDirection(int index, int total, float spreadAngle)
+    Vector3 ConeDir(int i, int total, float spread)
     {
-        // Create rays in a circle pattern around the forward axis
-        float angleAroundCone = (index / (float)total) * 360f * Mathf.Deg2Rad;
-        
-        // Convert spread angle to radians
-        float spreadRad = spreadAngle * Mathf.Deg2Rad;
-        
-        // Create a direction at the specified angle from the cone axis
-        // X and Y form the circle, Z is forward
-        float x = Mathf.Sin(spreadRad) * Mathf.Cos(angleAroundCone);
-        float y = Mathf.Sin(spreadRad) * Mathf.Sin(angleAroundCone);
-        float z = Mathf.Cos(spreadRad);
-        
-        return new Vector3(x, y, z).normalized;
+        float a = (i / (float)total) * Mathf.PI * 2f;
+        float s = spread * Mathf.Deg2Rad;
+
+        return new Vector3(
+            Mathf.Sin(s) * Mathf.Cos(a),
+            Mathf.Sin(s) * Mathf.Sin(a),
+            Mathf.Cos(s)
+        ).normalized;
     }
 }

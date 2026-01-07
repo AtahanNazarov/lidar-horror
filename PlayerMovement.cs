@@ -40,7 +40,6 @@ public class PlayerMovement : MonoBehaviour
         if (grounded && velocity.y < 0)
             velocity.y = -2f;
 
-        // Movement relative to camera-aligned player
         Vector3 move =
             transform.right * moveInput.x +
             transform.forward * moveInput.y;
