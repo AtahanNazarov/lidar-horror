@@ -1,0 +1,39 @@
+# Enforce LF line endings for all text files
+* text=auto eol=lf
+
+# Unity YAML files should be treated as text for diff + merge
+*.meta text unityyaml
+*.unity text unityyaml
+*.prefab text unityyaml
+*.asset text unityyaml
+*.mat text unityyaml
+
+# C# source files as text (normal diff)
+*.cs text eol=lf
+
+# Ignore diffs for binary file types
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.tga binary
+*.psd binary
+*.fbx binary
+*.exr binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.dll binary
+*.pdf binary
+
+# Shader source as text (useful for diffs)
+*.shader text
+*.compute text
+
+# Prevent Git from trying to normalize these (compiler-generated binary)
+*.exe binary
+*.aab binary
+*.apk binary
+
+# Git Large File Storage suggestion (optional)
+# If later you start tracking big assets like high-res textures, enable:
+# filter=lfs diff=lfs merge=lfs -text
